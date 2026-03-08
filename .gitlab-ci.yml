@@ -38,9 +38,21 @@ before_script:
   # Authenticate to GCP via Workload Identity Federation
   # -----------------------------
   - echo "$CI_JOB_JWT" > token.jwt
-  - gcloud auth login --brief --cred-file=token.jwt --impersonate-service-account=$GOOGLE_SERVICE_ACCOUNT
-  - export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
+  - |
+    cat > wif-config.json <<EOF
+    {
+      "type": "external_account",
+      "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
+      "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+      "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
+      "credential_source": {
+        "file": "token.jwt"
+      }
+    }
+    EOF
+  - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/wif-config.json
   - gcloud config set project $GOOGLE_PROJECT
+  - gcloud auth application-default print-access-token > /dev/null  # Verify authentication works
 
   # -----------------------------
   # Create backend bucket if not exists
@@ -86,8 +98,19 @@ apply:
   script:
     # Re-authenticate in case of a new runner
     - echo "$CI_JOB_JWT" > token.jwt
-    - gcloud auth login --brief --cred-file=token.jwt --impersonate-service-account=$GOOGLE_SERVICE_ACCOUNT
-    - export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
+    - |
+      cat > wif-config.json <<EOF
+      {
+        "type": "external_account",
+        "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
+        "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+        "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
+        "credential_source": {
+          "file": "token.jwt"
+        }
+      }
+      EOF
+    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/wif-config.json
     - gcloud config set project $GOOGLE_PROJECT
 
     - terraform apply -auto-approve tfplan
@@ -102,8 +125,19 @@ destroy:
   script:
     # Re-authenticate in case of a new runner
     - echo "$CI_JOB_JWT" > token.jwt
-    - gcloud auth login --brief --cred-file=token.jwt --impersonate-service-account=$GOOGLE_SERVICE_ACCOUNT
-    - export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
+    - |
+      cat > wif-config.json <<EOF
+      {
+        "type": "external_account",
+        "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
+        "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+        "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
+        "credential_source": {
+          "file": "token.jwt"
+        }
+      }
+      EOF
+    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/wif-config.json
     - gcloud config set project $GOOGLE_PROJECT
 
     - terraform destroy -auto-approve
