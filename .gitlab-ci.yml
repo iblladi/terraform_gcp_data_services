@@ -23,7 +23,7 @@ variables:
 .id_tokens:
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: https://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}/
+      aud: https://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}
 
 
 before_script:
