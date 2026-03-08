@@ -1,12 +1,17 @@
 #!/bin/bash
 
+# bucket name from first argument
 TF_STATE_BUCKET=$1
 
-REGION=$TF_REGION
-GCP_PROJECT=$GOOGLE_PROJECT
+# fallback to defaults if env vars missing
+REGION=${TF_REGION}
+GCP_PROJECT=${GOOGLE_PROJECT}
+
+echo "TF_STATE_BUCKET=$TF_STATE_BUCKET"
+echo "GCP_PROJECT=$GCP_PROJECT"
+echo "REGION=$REGION"
 
 echo "Checking if bucket exists..."
-
 if gsutil ls -b gs://$TF_STATE_BUCKET >/dev/null 2>&1; then
   echo "Bucket already exists"
 else
