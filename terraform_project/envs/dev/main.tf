@@ -38,6 +38,7 @@ module "iam" {
     "roles/pubsub.publisher",
     "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",
-    "roles/workflows.invoker"
+    "roles/workflows.invoker",
+    "roles/bigquery.readSessionUser"
   ]
 }
