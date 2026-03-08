@@ -1,7 +1,9 @@
 image: google/cloud-sdk:alpine
 
 stages:
+  - gcp-sts
   - bucket_creation
+  - init
   - validate
   - plan
   - apply
@@ -46,8 +48,8 @@ before_script:
 # -----------------------------
 # Authenticate to GCP via Workload Identity Federation
 # -----------------------------
-bucket_creation:
-  stage: bucket_creation
+gcp-sts:
+  stage: gcp-sts
   extends: .id_tokens
   script:
     - echo "Authenticating Gitlab…"
@@ -65,7 +67,9 @@ bucket_creation:
 # -----------------------------
 # Create backend bucket if not exists
 # -----------------------------
-gcp-sts:
+
+bucket_creation:
+  stage: bucket_creation
   extends: .id_tokens
   image: dwdraju/alpine-curl-jq
   script:
