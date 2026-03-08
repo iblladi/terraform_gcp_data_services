@@ -1,7 +1,7 @@
 # Create Service Account
 resource "google_service_account" "sa" {
   account_id   = var.service_account_name
-  display_name = concat(var.service_account_name, "-sa")
+  display_name = "${var.service_account_name}-sa"
   project      = var.project_id
 }
 
