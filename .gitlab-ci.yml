@@ -18,13 +18,13 @@ variables:
 
 before_script:
   # Install dependencies via apk
-  - apk add --no-cache bash curl unzip python3 py3-pip python3-venv
+  - apk add --no-cache bash curl unzip python3 py3-pip
 
-  # Create and activate a virtual environment
+  # Create virtual environment
   - python3 -m venv venv
   - source venv/bin/activate
 
-  # Install Python packages inside the virtual environment
+  # Install Python packages inside venv
   - pip install --upgrade pip
   - pip install google-cloud-storage
 
