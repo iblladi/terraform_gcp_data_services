@@ -9,8 +9,6 @@ stages:
 variables:
   TF_IN_AUTOMATION: "true"
   TF_INPUT: "false"
-  TF_ROOT: ${TF_ROOT}
-  TF_STATE_BUCKET: ${TF_STATE_BUCKET}
   TF_REGION: ${REGION}
   GOOGLE_PROJECT: ${PROJECT_ID}
   GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
