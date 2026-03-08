@@ -42,18 +42,18 @@ before_script:
   - mv terraform /usr/local/bin/
   - terraform version
 
+
+# -----------------------------
+# Authenticate to GCP via Workload Identity Federation
+# -----------------------------
 bucket_creation:
   stage: bucket_creation
   extends: .id_tokens
-  # -----------------------------
-  # Authenticate to GCP via Workload Identity Federation
-  # -----------------------------
   script:
     - echo "Authenticating Gitlab…"
     - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file 
     - cat $CI_BUILDS_DIR/.ci_job_jwt_file 
-    - gcloud iam workload-identity-pools
-        create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
+    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
         --service-account=${GOOGLE_SERVICE_ACCOUNT}
         --output-file=$GOOGLE_APPLICATION_CREDENTIALS
         --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file 
@@ -61,15 +61,24 @@ bucket_creation:
     - cat $GOOGLE_APPLICATION_CREDENTIALS 
     - gcloud auth list
 
-  # -----------------------------
-  # Create backend bucket if not exists
-  # -----------------------------
+
+# -----------------------------
+# Create backend bucket if not exists
+# -----------------------------
+gcp-sts:
+  extends: .id_tokens
+  image: dwdraju/alpine-curl-jq
+  script:
     - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
     - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh ${TF_STATE_BUCKET}
-
-  # -----------------------------
-  # Terraform init
-  # -----------------------------
+  
+# -----------------------------
+# Terraform init
+# -----------------------------
+init:
+  extends: .id_tokens
+  stage: init
+  script:
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
