@@ -71,7 +71,7 @@ terraform_plan:
   script:
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
-    - terraform fmt -check
+    - terraform fmt -recursive
     - terraform validate
     - terraform plan -out=tfplan
   artifacts:
