@@ -1,13 +1,10 @@
 image: google/cloud-sdk:alpine
 
 stages:
-  - gcp-sts
-  - bucket_creation
-  - init
-  - validate
-  - plan
-  - apply
-  - destroy
+  - setup
+  - terraform_plan
+  - terraform_apply
+  - terraform_destroy
 
 variables:
   TF_IN_AUTOMATION: "true"
@@ -17,98 +14,60 @@ variables:
   GOOGLE_PROJECT_NUMBER: ${PROJECT_NUMBER}
   GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
   WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab
-  GOOGLE_APPLICATION_CREDENTIALS: $CI_BUILDS_DIR/.gcp_temp_cred.json
-
 
 .id_tokens:
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: https://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}
-
+      aud: https://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}/
 
 before_script:
-  # -----------------------------
   # Install dependencies
-  # -----------------------------
-  - apk add --no-cache bash curl unzip python3 py3-pip
+  - apk add --no-cache bash curl unzip python3 py3-pip git
   - python3 -m venv venv
   - source venv/bin/activate
   - pip install --upgrade pip
   - pip install google-cloud-storage
-
-  # -----------------------------
   # Install Terraform
-  # -----------------------------
   - curl -LO https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
   - unzip -o terraform_1.6.0_linux_amd64.zip
   - mv terraform /usr/local/bin/
   - terraform version
 
-
 # -----------------------------
-# Authenticate to GCP via Workload Identity Federation
+# Setup stage: authenticate and create backend bucket
 # -----------------------------
-gcp-sts:
-  stage: gcp-sts
+setup:
+  stage: setup
   extends: .id_tokens
   script:
-    - echo "Authenticating Gitlab…"
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file 
-    - cat $CI_BUILDS_DIR/.ci_job_jwt_file 
-    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-        --service-account=${GOOGLE_SERVICE_ACCOUNT}
-        --output-file=$GOOGLE_APPLICATION_CREDENTIALS
-        --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file 
-    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS 
-    - cat $GOOGLE_APPLICATION_CREDENTIALS 
-    - gcloud auth list
-
-
-# -----------------------------
-# Create backend bucket if not exists
-# -----------------------------
-
-bucket_creation:
-  stage: bucket_creation
-  extends: .id_tokens
-  script:
-    - echo $GITLAB_OIDC_TOKEN | cut -d '.' -f2 | base64 -d
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
-    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-        --service-account=${GOOGLE_SERVICE_ACCOUNT}
-        --output-file=$GOOGLE_APPLICATION_CREDENTIALS
-        --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file
+    - echo "Authenticating GitLab OIDC..."
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
+    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER} \
+        --service-account=${GOOGLE_SERVICE_ACCOUNT} \
+        --output-file=$CI_PROJECT_DIR/.gcp_temp_cred.json \
+        --credential-source-file=$CI_PROJECT_DIR/.ci_job_jwt_file
+    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
-    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
+    - gcloud config set project $PROJECT_ID
     - gcloud auth list
     - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
     - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh ${TF_STATE_BUCKET}
-  
+
 # -----------------------------
-# Terraform init
+# Terraform plan (for MRs)
 # -----------------------------
-init:
+terraform_plan:
+  stage: terraform_plan
   extends: .id_tokens
-  stage: init
+  dependencies:
+    - setup
   script:
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
+    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
-
-# -----------------------------
-# Terraform validate
-# -----------------------------
-validate:
-  stage: validate
-  script:
     - terraform fmt -check
     - terraform validate
-
-# -----------------------------
-# Terraform plan
-# -----------------------------
-plan:
-  stage: plan
-  script:
     - terraform plan -out=tfplan
   artifacts:
     paths:
@@ -117,45 +76,34 @@ plan:
     - merge_requests
 
 # -----------------------------
-# Terraform apply
+# Terraform apply (for main branch)
 # -----------------------------
-apply:
-  stage: apply
+terraform_apply:
+  stage: terraform_apply
   extends: .id_tokens
   dependencies:
-    - plan
+    - setup
+    - terraform_plan
   script:
-    # Re-authenticate in case of a new runner
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
-    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-      --service-account=${GOOGLE_SERVICE_ACCOUNT}
-      --output-file=$GOOGLE_APPLICATION_CREDENTIALS
-      --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file
-    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
-    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
-    - gcloud auth list
-
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
+    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
+    - cd "$CI_PROJECT_DIR/$TF_ROOT"
+    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform apply -auto-approve tfplan
   only:
     - main
 
 # -----------------------------
-# Terraform destroy
+# Terraform destroy (manual)
 # -----------------------------
-destroy:
-  stage: destroy
+terraform_destroy:
+  stage: terraform_destroy
   extends: .id_tokens
   script:
-    # Re-authenticate in case of a new runner
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
-    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-      --service-account=${GOOGLE_SERVICE_ACCOUNT}
-      --output-file=$GOOGLE_APPLICATION_CREDENTIALS
-      --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file
-    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
-    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
-    - gcloud auth list
-
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
+    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
+    - cd "$CI_PROJECT_DIR/$TF_ROOT"
+    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform destroy -auto-approve
   when: manual
   only:
