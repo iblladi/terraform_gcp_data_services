@@ -71,9 +71,15 @@ gcp-sts:
 bucket_creation:
   stage: bucket_creation
   extends: .id_tokens
-  image: dwdraju/alpine-curl-jq
   script:
-    - pip install gsutil
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
+    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
+        --service-account=${GOOGLE_SERVICE_ACCOUNT}
+        --output-file=$GOOGLE_APPLICATION_CREDENTIALS
+        --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file
+    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
+    - gcloud auth list
     - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
     - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh ${TF_STATE_BUCKET}
   
@@ -119,12 +125,11 @@ apply:
     - plan
   script:
     # Re-authenticate in case of a new runner
-    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
     - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-      --service-account="${GOOGLE_SERVICE_ACCOUNT}"
-      --output-file=.gcp_temp_cred.json
-      --credential-source-file=.ci_job_jwt_file
-    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
+      --service-account=${GOOGLE_SERVICE_ACCOUNT}
+      --output-file=$GOOGLE_APPLICATION_CREDENTIALS
+      --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
     - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
     - gcloud auth list
@@ -141,12 +146,11 @@ destroy:
   extends: .id_tokens
   script:
     # Re-authenticate in case of a new runner
-    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
     - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-      --service-account="${GOOGLE_SERVICE_ACCOUNT}"
-      --output-file=.gcp_temp_cred.json
-      --credential-source-file=.ci_job_jwt_file
-    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
+      --service-account=${GOOGLE_SERVICE_ACCOUNT}
+      --output-file=$GOOGLE_APPLICATION_CREDENTIALS
+      --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
     - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
     - gcloud auth list
