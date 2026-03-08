@@ -1,4 +1,4 @@
-image: gcr.io/google.com/cloudsdktool/cloud-sdk:472.0.0
+image: google/cloud-sdk:alpine
 
 stages:
   - validate
