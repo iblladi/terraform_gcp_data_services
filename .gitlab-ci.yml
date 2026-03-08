@@ -52,10 +52,10 @@ bucket_creation:
     - echo "Authenticating Gitlab…"
     - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file 
     - cat $CI_BUILDS_DIR/.ci_job_jwt_file 
-    - gcloud iam workload-identity-pools \
-        create-cred-config ${WORKLOAD_IDENTITY_PROVIDER} \
-        --service-account=”${GOOGLE_SERVICE_ACCOUNT}" \
-        --output-file=$GOOGLE_APPLICATION_CREDENTIALS \
+    - gcloud iam workload-identity-pools
+        create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
+        --service-account=${GOOGLE_SERVICE_ACCOUNT}
+        --output-file=$GOOGLE_APPLICATION_CREDENTIALS
         --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file 
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS 
     - cat $GOOGLE_APPLICATION_CREDENTIALS 
