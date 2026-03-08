@@ -48,9 +48,9 @@ bucket_creation:
   # -----------------------------
   script:
     - echo "${GITLAB_OIDC_TOKEN}" > .ci_job_jwt_file
-    - gcloud iam workload-identity-pools create-cred-config "${WORKLOAD_IDENTITY_PROVIDER}" \
-        --service-account="${GOOGLE_SERVICE_ACCOUNT}" \
-        --output-file=".gcp_temp_cred.json" \
+    - gcloud iam workload-identity-pools create-cred-config "${WORKLOAD_IDENTITY_PROVIDER}"
+        --service-account="${GOOGLE_SERVICE_ACCOUNT}"
+        --output-file=".gcp_temp_cred.json"
         --credential-source-file=".ci_job_jwt_file"
     - gcloud auth activate-service-account --cred-file=.gcp_temp_cred.json
     - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
