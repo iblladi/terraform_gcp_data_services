@@ -14,8 +14,12 @@ variables:
   GOOGLE_PROJECT_NUMBER: ${PROJECT_NUMBER}
   GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
   WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
-  TF_ROOT: terraform/envs/dev
-  TF_STATE_BUCKET: terraform-state-masterclassparis
+
+.id_tokens:
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
+
 
 before_script:
   # -----------------------------
@@ -35,38 +39,32 @@ before_script:
   - mv terraform /usr/local/bin/
   - terraform version
 
+bucket_creation:
+  extends: .id_tokens
   # -----------------------------
   # Authenticate to GCP via Workload Identity Federation
   # -----------------------------
-  - echo "$CI_JOB_JWT" > token.jwt
-  - |
-    cat > wif-config.json <<EOF
-    {
-      "type": "external_account",
-      "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
-      "token_url": "https://sts.googleapis.com/v1/token",
-      "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
-      "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
-      "credential_source": {
-        "file": "token.jwt"
-      }
-    }
-    EOF
-  - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/wif-config.json
-  - gcloud config set project $GOOGLE_PROJECT
-  - gcloud auth application-default print-access-token > /dev/null  # Verify authentication works
+  script:
+    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
+    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
+      --service-account="${GOOGLE_SERVICE_ACCOUNT}"
+      --output-file=.gcp_temp_cred.json
+      --credential-source-file=.ci_job_jwt_file
+    - gcloud auth login --cred-file=`pwd`/.gcp_temp_cred.json
+    - gcloud auth list
+
 
   # -----------------------------
   # Create backend bucket if not exists
   # -----------------------------
-  - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
-  - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh $TF_STATE_BUCKET
+    - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
+    - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh $TF_STATE_BUCKET
 
   # -----------------------------
   # Terraform init
   # -----------------------------
-  - cd $CI_PROJECT_DIR/$TF_ROOT
-  - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
+    - cd $CI_PROJECT_DIR/$TF_ROOT
+    - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
 # -----------------------------
 # Terraform validate
@@ -95,26 +93,18 @@ plan:
 # -----------------------------
 apply:
   stage: apply
+  extends: .id_tokens
   dependencies:
     - plan
   script:
     # Re-authenticate in case of a new runner
-    - echo "$CI_JOB_JWT" > token.jwt
-    - |
-      cat > wif-config.json <<EOF
-      {
-        "type": "external_account",
-        "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
-        "token_url": "https://sts.googleapis.com/v1/token",
-        "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
-        "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
-        "credential_source": {
-          "file": "token.jwt"
-        }
-      }
-      EOF
-    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/wif-config.json
-    - gcloud config set project $GOOGLE_PROJECT
+    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
+    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
+      --service-account="${GOOGLE_SERVICE_ACCOUNT}"
+      --output-file=.gcp_temp_cred.json
+      --credential-source-file=.ci_job_jwt_file
+    - gcloud auth login --cred-file=`pwd`/.gcp_temp_cred.json
+    - gcloud auth list
 
     - terraform apply -auto-approve tfplan
   only:
@@ -125,24 +115,16 @@ apply:
 # -----------------------------
 destroy:
   stage: destroy
+  extends: .id_tokens
   script:
     # Re-authenticate in case of a new runner
-    - echo "$CI_JOB_JWT" > token.jwt
-    - |
-      cat > wif-config.json <<EOF
-      {
-        "type": "external_account",
-        "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
-        "token_url": "https://sts.googleapis.com/v1/token",
-        "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
-        "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
-        "credential_source": {
-          "file": "token.jwt"
-        }
-      }
-      EOF
-    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/wif-config.json
-    - gcloud config set project $GOOGLE_PROJECT
+    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
+    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
+      --service-account="${GOOGLE_SERVICE_ACCOUNT}"
+      --output-file=.gcp_temp_cred.json
+      --credential-source-file=.ci_job_jwt_file
+    - gcloud auth login --cred-file=`pwd`/.gcp_temp_cred.json
+    - gcloud auth list
 
     - terraform destroy -auto-approve
   when: manual
