@@ -54,6 +54,7 @@ bucket_creation:
         --credential-source-file=.ci_job_jwt_file
     - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
     - gcloud auth list
 
   # -----------------------------
@@ -107,6 +108,7 @@ apply:
       --credential-source-file=.ci_job_jwt_file
     - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
     - gcloud auth list
 
     - terraform apply -auto-approve tfplan
@@ -128,6 +130,7 @@ destroy:
       --credential-source-file=.ci_job_jwt_file
     - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
     - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
     - gcloud auth list
 
     - terraform destroy -auto-approve
