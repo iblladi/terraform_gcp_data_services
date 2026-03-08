@@ -7,42 +7,44 @@ stages:
   - destroy
 
 variables:
-  TF_ROOT: $TF_ROOT
-  TF_STATE_BUCKET: $TF_STATE_BUCKET
-  TF_REGION: $REGION
-  GOOGLE_PROJECT: $PROJECT_ID
-  GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@$PROJECT_ID.iam.gserviceaccount.com
-  WORKLOAD_IDENTITY_PROVIDER: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_ROOT: ${TF_ROOT}
+  TF_STATE_BUCKET: ${TF_STATE_BUCKET}
+  TF_REGION: ${REGION}
+  GOOGLE_PROJECT: ${PROJECT_ID}
+  GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
+  WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
+
+id_tokens:
+  GCP_ID_TOKEN:
+    aud: ${WORKLOAD_IDENTITY_PROVIDER}
 
 before_script:
-  # Install required tools
   - apk add --no-cache bash curl unzip python3 py3-pip
   - pip install google-cloud-storage
 
-  # Install Terraform
   - curl -LO https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
   - unzip terraform_1.6.0_linux_amd64.zip
   - mv terraform /usr/local/bin/
   - terraform version
 
-  # Authenticate with Workload Identity Federation
-  - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+  - echo "$GCP_ID_TOKEN" > token.jwt
+
+  - | 
+    gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
       --service-account=$GOOGLE_SERVICE_ACCOUNT \
       --output-file=cred.json \
-      --credential-source-file=$CI_JOB_JWT_V2
-  - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+      --credential-source-file=token.jwt
 
-  # Set the GCP project
+  - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
   - gcloud config set project $GOOGLE_PROJECT
 
-  # Go to Terraform folder
   - cd $TF_ROOT
 
-  # Create backend bucket if it doesn't exist
-  - chmod +x create_backend_bucket.sh 
+  - chmod +x create_backend_bucket.sh $TF_STATE_BUCKET
   - ./create_backend_bucket.sh
 
-  # Initialize Terraform backend
   - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
 validate:
@@ -57,12 +59,14 @@ plan:
     - terraform plan -out=tfplan
   artifacts:
     paths:
-      - $TF_ROOT/tfplan
+      - tfplan
   only:
     - merge_requests
 
 apply:
   stage: apply
+  dependencies:
+    - plan
   script:
     - terraform apply -auto-approve tfplan
   only:
