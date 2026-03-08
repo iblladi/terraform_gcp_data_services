@@ -35,7 +35,7 @@ before_script:
 
   # Navigate to Terraform root
   - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
-  - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
+  - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh $TF_STATE_BUCKET
 
   # Go to Terraform environment
   - cd $CI_PROJECT_DIR/$TF_ROOT
