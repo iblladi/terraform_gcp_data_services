@@ -1,4 +1,4 @@
-image: google/cloud-sdk:alpine
+image: gcr.io/google.com/cloudsdktool/cloud-sdk:472.0.0
 
 stages:
   - validate
@@ -13,6 +13,8 @@ variables:
   GOOGLE_PROJECT: ${PROJECT_ID}
   GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
   WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
+  TF_ROOT: terraform/envs/dev
+  TF_STATE_BUCKET: terraform-state-masterclassparis
 
 before_script:
   # -----------------------------
@@ -33,10 +35,11 @@ before_script:
   - terraform version
 
   # -----------------------------
-  # Generate Workload Identity credentials
+  # Generate Workload Identity Federation credentials
   # -----------------------------
-  - echo "$GCP_ID_TOKEN" > token.jwt
-  - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+  - echo "$CI_JOB_JWT" > token.jwt
+  - gcloud iam workload-identity-pools create-cred-config \
+      $WORKLOAD_IDENTITY_PROVIDER \
       --service-account=$GOOGLE_SERVICE_ACCOUNT \
       --output-file=cred.json \
       --credential-source-file=token.jwt
@@ -44,13 +47,13 @@ before_script:
   - gcloud config set project $GOOGLE_PROJECT
 
   # -----------------------------
-  # Create Terraform backend bucket if not exists
+  # Create backend bucket if not exists
   # -----------------------------
   - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
   - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh $TF_STATE_BUCKET
 
   # -----------------------------
-  # Initialize Terraform in the environment
+  # Terraform init
   # -----------------------------
   - cd $CI_PROJECT_DIR/$TF_ROOT
   - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
@@ -69,11 +72,7 @@ validate:
 # -----------------------------
 plan:
   stage: plan
-  id_tokens:
-    GCP_ID_TOKEN:
-      aud: ${WORKLOAD_IDENTITY_PROVIDER}
   script:
-    # Credentials already handled in before_script
     - terraform plan -out=tfplan
   artifacts:
     paths:
@@ -88,13 +87,11 @@ apply:
   stage: apply
   dependencies:
     - plan
-  id_tokens:
-    GCP_ID_TOKEN:
-      aud: ${WORKLOAD_IDENTITY_PROVIDER}
   script:
     # Re-generate credentials for self-contained job
-    - echo "$GCP_ID_TOKEN" > token.jwt
-    - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+    - echo "$CI_JOB_JWT" > token.jwt
+    - gcloud iam workload-identity-pools create-cred-config \
+        $WORKLOAD_IDENTITY_PROVIDER \
         --service-account=$GOOGLE_SERVICE_ACCOUNT \
         --output-file=cred.json \
         --credential-source-file=token.jwt
@@ -110,13 +107,11 @@ apply:
 # -----------------------------
 destroy:
   stage: destroy
-  id_tokens:
-    GCP_ID_TOKEN:
-      aud: ${WORKLOAD_IDENTITY_PROVIDER}
   script:
     # Re-generate credentials for self-contained job
-    - echo "$GCP_ID_TOKEN" > token.jwt
-    - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+    - echo "$CI_JOB_JWT" > token.jwt
+    - gcloud iam workload-identity-pools create-cred-config \
+        $WORKLOAD_IDENTITY_PROVIDER \
         --service-account=$GOOGLE_SERVICE_ACCOUNT \
         --output-file=cred.json \
         --credential-source-file=token.jwt
