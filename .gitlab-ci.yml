@@ -43,6 +43,7 @@ before_script:
     {
       "type": "external_account",
       "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
+      "token_url": "https://sts.googleapis.com/v1/token",
       "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
       "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
       "credential_source": {
@@ -103,6 +104,7 @@ apply:
       {
         "type": "external_account",
         "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
+        "token_url": "https://sts.googleapis.com/v1/token",
         "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
         "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
         "credential_source": {
@@ -130,6 +132,7 @@ destroy:
       {
         "type": "external_account",
         "audience": "//iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}",
+        "token_url": "https://sts.googleapis.com/v1/token",
         "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
         "service_account_impersonate_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${GOOGLE_SERVICE_ACCOUNT}:generateAccessToken",
         "credential_source": {
