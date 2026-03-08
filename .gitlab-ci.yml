@@ -76,7 +76,7 @@ terraform_plan:
     - terraform plan -out=tfplan
   artifacts:
     paths:
-      - tfplan
+      - $TF_ROOT/tfplan
   only:
     - main
 
