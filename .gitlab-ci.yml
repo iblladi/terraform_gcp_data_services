@@ -1,6 +1,7 @@
 image: google/cloud-sdk:alpine
 
 stages:
+  - bucket_creation
   - validate
   - plan
   - apply
