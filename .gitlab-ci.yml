@@ -41,6 +41,7 @@ before_script:
   - terraform version
 
 bucket_creation:
+  stage: bucket_creation
   extends: .id_tokens
   # -----------------------------
   # Authenticate to GCP via Workload Identity Federation
