@@ -34,6 +34,7 @@ before_script:
   - terraform version
 
   # Navigate to Terraform root
+  - ls -R $CI_PROJECT_DIR
   - cd $CI_PROJECT_DIR/$TF_ROOT
   - pwd
   - ls -R
