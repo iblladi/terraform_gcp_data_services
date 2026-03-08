@@ -52,7 +52,7 @@ bucket_creation:
         --service-account="${GOOGLE_SERVICE_ACCOUNT}"
         --output-file=.gcp_temp_cred.json
         --credential-source-file=.ci_job_jwt_file
-    - gcloud auth activate-service-account --cred-file=.gcp_temp_cred.json
+    - gcloud auth activate-service-account --key-file=.gcp_temp_cred.json
     - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
     - gcloud auth list
 
