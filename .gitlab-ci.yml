@@ -34,13 +34,11 @@ before_script:
   - terraform version
 
   # Navigate to Terraform root
-  - cd $TF_ROOT
-  - chmod +x create_backend_bucket.sh
+  - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
+  - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
 
-  # Create backend bucket if not exists
-  - ./scripts/backend_bucket/create_backend_bucket.sh
-
-  # Initialize Terraform
+  # Go to Terraform environment
+  - cd $CI_PROJECT_DIR/$TF_ROOT
   - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
 # -----------------------------
