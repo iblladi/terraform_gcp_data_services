@@ -73,6 +73,7 @@ bucket_creation:
   extends: .id_tokens
   image: dwdraju/alpine-curl-jq
   script:
+    - pip install gsutil
     - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
     - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh ${TF_STATE_BUCKET}
   
