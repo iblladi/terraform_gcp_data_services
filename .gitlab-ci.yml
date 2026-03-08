@@ -40,9 +40,9 @@ before_script:
   - echo "$CI_JOB_JWT" > token.jwt
   - gcloud iam workload-identity-pools create-cred-config \
       $WORKLOAD_IDENTITY_PROVIDER \
-      --service-account=$GOOGLE_SERVICE_ACCOUNT \
-      --output-file=cred.json \
-      --credential-source-file=token.jwt
+      --service-account $GOOGLE_SERVICE_ACCOUNT \
+      --output-file cred.json \
+      --credential-source-file token.jwt
   - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
   - gcloud config set project $GOOGLE_PROJECT
 
