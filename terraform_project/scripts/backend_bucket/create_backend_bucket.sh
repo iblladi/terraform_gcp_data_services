@@ -7,10 +7,10 @@ GCP_PROJECT=$GOOGLE_PROJECT
 
 echo "Checking if bucket exists..."
 
-if gsutil ls -b gs://$BUCKET_NAME >/dev/null 2>&1; then
+if gsutil ls -b gs://$TF_STATE_BUCKET >/dev/null 2>&1; then
   echo "Bucket already exists"
 else
   echo "Creating Terraform backend bucket..."
-  gsutil mb -p $GCP_PROJECT -l $REGION gs://$BUCKET_NAME
-  gsutil versioning set on gs://$BUCKET_NAME
+  gsutil mb -p $GCP_PROJECT -l $REGION gs://$TF_STATE_BUCKET
+  gsutil versioning set on gs://$TF_STATE_BUCKET
 fi
