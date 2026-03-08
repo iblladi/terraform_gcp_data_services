@@ -16,46 +16,54 @@ variables:
   GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
   WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
 
-id_tokens:
-  GCP_ID_TOKEN:
-    aud: ${WORKLOAD_IDENTITY_PROVIDER}
-
 before_script:
   - apk add --no-cache bash curl unzip python3 py3-pip
   - pip install google-cloud-storage
 
+  # Install Terraform
   - curl -LO https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
   - unzip terraform_1.6.0_linux_amd64.zip
   - mv terraform /usr/local/bin/
   - terraform version
 
-  - echo "$GCP_ID_TOKEN" > token.jwt
-
-  - | 
-    gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
-      --service-account=$GOOGLE_SERVICE_ACCOUNT \
-      --output-file=cred.json \
-      --credential-source-file=token.jwt
-
-  - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
-  - gcloud config set project $GOOGLE_PROJECT
-
+  # Navigate to Terraform root
   - cd $TF_ROOT
+  - chmod +x create_backend_bucket.sh
 
-  - chmod +x create_backend_bucket.sh $TF_STATE_BUCKET
+  # Create backend bucket if not exists
   - ./create_backend_bucket.sh
 
+  # Initialize Terraform
   - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
+# -----------------------------
+# Terraform validate job
+# -----------------------------
 validate:
   stage: validate
   script:
     - terraform fmt -check
     - terraform validate
 
+# -----------------------------
+# Terraform plan job
+# -----------------------------
 plan:
   stage: plan
+  id_tokens:
+    GCP_ID_TOKEN:
+      aud: ${WORKLOAD_IDENTITY_PROVIDER}
   script:
+    # Generate Workload Identity creds
+    - echo "$GCP_ID_TOKEN" > token.jwt
+    - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+        --service-account=$GOOGLE_SERVICE_ACCOUNT \
+        --output-file=cred.json \
+        --credential-source-file=token.jwt
+    - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+    - gcloud config set project $GOOGLE_PROJECT
+
+    # Run Terraform plan
     - terraform plan -out=tfplan
   artifacts:
     paths:
@@ -63,18 +71,46 @@ plan:
   only:
     - merge_requests
 
+# -----------------------------
+# Terraform apply job
+# -----------------------------
 apply:
   stage: apply
   dependencies:
     - plan
+  id_tokens:
+    GCP_ID_TOKEN:
+      aud: ${WORKLOAD_IDENTITY_PROVIDER}
   script:
+    - echo "$GCP_ID_TOKEN" > token.jwt
+    - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+        --service-account=$GOOGLE_SERVICE_ACCOUNT \
+        --output-file=cred.json \
+        --credential-source-file=token.jwt
+    - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+    - gcloud config set project $GOOGLE_PROJECT
+
     - terraform apply -auto-approve tfplan
   only:
     - main
 
+# -----------------------------
+# Terraform destroy job
+# -----------------------------
 destroy:
   stage: destroy
+  id_tokens:
+    GCP_ID_TOKEN:
+      aud: ${WORKLOAD_IDENTITY_PROVIDER}
   script:
+    - echo "$GCP_ID_TOKEN" > token.jwt
+    - gcloud iam workload-identity-pools create-cred-config $WORKLOAD_IDENTITY_PROVIDER \
+        --service-account=$GOOGLE_SERVICE_ACCOUNT \
+        --output-file=cred.json \
+        --credential-source-file=token.jwt
+    - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+    - gcloud config set project $GOOGLE_PROJECT
+
     - terraform destroy -auto-approve
   when: manual
   only:
