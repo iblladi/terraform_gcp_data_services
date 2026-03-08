@@ -71,7 +71,6 @@ terraform_plan:
   dependencies:
     - setup
   script:
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
     - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
@@ -82,7 +81,7 @@ terraform_plan:
     paths:
       - tfplan
   only:
-    - merge_requests
+    - main
 
 # -----------------------------
 # Terraform apply (for main branch)
@@ -94,6 +93,7 @@ terraform_apply:
     - setup
     - terraform_plan
   script:
+    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform apply -auto-approve tfplan
@@ -107,6 +107,7 @@ terraform_destroy:
   stage: terraform_destroy
   extends: .id_tokens
   script:
+    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform destroy -auto-approve
