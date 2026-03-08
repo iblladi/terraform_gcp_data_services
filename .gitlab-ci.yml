@@ -34,11 +34,6 @@ before_script:
   - terraform version
 
   # Navigate to Terraform root
-  - ls -R $CI_PROJECT_DIR
-  - cd $CI_PROJECT_DIR/$TF_ROOT
-  - pwd
-  - ls -R
-  
   - cd $TF_ROOT
   - chmod +x create_backend_bucket.sh
 
