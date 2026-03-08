@@ -32,6 +32,11 @@ before_script:
   - unzip -o terraform_1.6.0_linux_amd64.zip
   - mv terraform /usr/local/bin/
   - terraform version
+  # Set path to GCP credentials if they exist
+  - |
+    if [ -f "$CI_PROJECT_DIR/.gcp_temp_cred.json" ]; then
+      export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
+    fi
 
 # -----------------------------
 # Setup stage: authenticate and create backend bucket
@@ -44,14 +49,16 @@ setup:
     - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
     - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
         --service-account=${GOOGLE_SERVICE_ACCOUNT}
-        --output-file=$CI_PROJECT_DIR/.gcp_temp_cred.json
+        --output-file=$CI_PROJECT_DIR/.gcp_temp_cred.json 
         --credential-source-file=$CI_PROJECT_DIR/.ci_job_jwt_file
     - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
-    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
     - gcloud config set project $PROJECT_ID
-    - gcloud auth list
     - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
     - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh ${TF_STATE_BUCKET}
+  artifacts:
+    paths:
+      - .gcp_temp_cred.json
+    expire_in: 1h
 
 # -----------------------------
 # Terraform plan (for MRs)
@@ -62,8 +69,6 @@ terraform_plan:
   dependencies:
     - setup
   script:
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
-    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform fmt -check
@@ -85,8 +90,6 @@ terraform_apply:
     - setup
     - terraform_plan
   script:
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
-    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform apply -auto-approve tfplan
@@ -99,9 +102,9 @@ terraform_apply:
 terraform_destroy:
   stage: terraform_destroy
   extends: .id_tokens
+  dependencies:
+    - setup
   script:
-    - echo ${GITLAB_OIDC_TOKEN} > $CI_PROJECT_DIR/.ci_job_jwt_file
-    - export GOOGLE_APPLICATION_CREDENTIALS=$CI_PROJECT_DIR/.gcp_temp_cred.json
     - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
     - terraform destroy -auto-approve
