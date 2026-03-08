@@ -14,12 +14,14 @@ variables:
   GOOGLE_PROJECT: ${PROJECT_ID}
   GOOGLE_PROJECT_NUMBER: ${PROJECT_NUMBER}
   GOOGLE_SERVICE_ACCOUNT: masterclass-sa-gitlab@${PROJECT_ID}.iam.gserviceaccount.com
-  WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
+  WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab
+  GOOGLE_APPLICATION_CREDENTIALS: $CI_BUILDS_DIR/.gcp_temp_cred.json
+
 
 .id_tokens:
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: https://gitlab.com
+      aud: https://iam.googleapis.com/${WORKLOAD_IDENTITY_PROVIDER}/
 
 
 before_script:
@@ -47,14 +49,16 @@ bucket_creation:
   # Authenticate to GCP via Workload Identity Federation
   # -----------------------------
   script:
-    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
-    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-        --service-account="${GOOGLE_SERVICE_ACCOUNT}"
-        --output-file=.gcp_temp_cred.json
-        --credential-source-file=.ci_job_jwt_file
-    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
-    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
-    - gcloud config set core/account ${GOOGLE_SERVICE_ACCOUNT}
+    - echo "Authenticating Gitlab…"
+    - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file 
+    - cat $CI_BUILDS_DIR/.ci_job_jwt_file 
+    - gcloud iam workload-identity-pools \
+        create-cred-config ${WORKLOAD_IDENTITY_PROVIDER} \
+        --service-account=”${GOOGLE_SERVICE_ACCOUNT}" \
+        --output-file=$GOOGLE_APPLICATION_CREDENTIALS \
+        --credential-source-file=$CI_BUILDS_DIR/.ci_job_jwt_file 
+    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS 
+    - cat $GOOGLE_APPLICATION_CREDENTIALS 
     - gcloud auth list
 
   # -----------------------------
