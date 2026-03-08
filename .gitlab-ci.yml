@@ -35,15 +35,11 @@ before_script:
   - terraform version
 
   # -----------------------------
-  # Generate Workload Identity Federation credentials
+  # Authenticate to GCP via Workload Identity Federation
   # -----------------------------
   - echo "$CI_JOB_JWT" > token.jwt
-  - gcloud iam workload-identity-pools create-cred-config \
-      $WORKLOAD_IDENTITY_PROVIDER \
-      --service-account $GOOGLE_SERVICE_ACCOUNT \
-      --output-file cred.json \
-      --credential-source-file token.jwt
-  - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+  - gcloud auth login --brief --cred-file=token.jwt --impersonate-service-account=$GOOGLE_SERVICE_ACCOUNT
+  - export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
   - gcloud config set project $GOOGLE_PROJECT
 
   # -----------------------------
@@ -88,14 +84,10 @@ apply:
   dependencies:
     - plan
   script:
-    # Re-generate credentials for self-contained job
+    # Re-authenticate in case of a new runner
     - echo "$CI_JOB_JWT" > token.jwt
-    - gcloud iam workload-identity-pools create-cred-config \
-        $WORKLOAD_IDENTITY_PROVIDER \
-        --service-account=$GOOGLE_SERVICE_ACCOUNT \
-        --output-file=cred.json \
-        --credential-source-file=token.jwt
-    - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+    - gcloud auth login --brief --cred-file=token.jwt --impersonate-service-account=$GOOGLE_SERVICE_ACCOUNT
+    - export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
     - gcloud config set project $GOOGLE_PROJECT
 
     - terraform apply -auto-approve tfplan
@@ -108,14 +100,10 @@ apply:
 destroy:
   stage: destroy
   script:
-    # Re-generate credentials for self-contained job
+    # Re-authenticate in case of a new runner
     - echo "$CI_JOB_JWT" > token.jwt
-    - gcloud iam workload-identity-pools create-cred-config \
-        $WORKLOAD_IDENTITY_PROVIDER \
-        --service-account=$GOOGLE_SERVICE_ACCOUNT \
-        --output-file=cred.json \
-        --credential-source-file=token.jwt
-    - export GOOGLE_APPLICATION_CREDENTIALS=cred.json
+    - gcloud auth login --brief --cred-file=token.jwt --impersonate-service-account=$GOOGLE_SERVICE_ACCOUNT
+    - export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
     - gcloud config set project $GOOGLE_PROJECT
 
     - terraform destroy -auto-approve
