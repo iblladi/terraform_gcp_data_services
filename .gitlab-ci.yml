@@ -72,6 +72,7 @@ bucket_creation:
   stage: bucket_creation
   extends: .id_tokens
   script:
+    - echo $GITLAB_OIDC_TOKEN | cut -d '.' -f2 | base64 -d
     - echo ${GITLAB_OIDC_TOKEN} > $CI_BUILDS_DIR/.ci_job_jwt_file
     - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
         --service-account=${GOOGLE_SERVICE_ACCOUNT}
