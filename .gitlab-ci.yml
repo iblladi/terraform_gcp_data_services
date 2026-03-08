@@ -34,9 +34,9 @@ before_script:
   - terraform version
 
   # Navigate to Terraform root
-  - echo "PWD=$(pwd)"
-  - echo "TF_ROOT=$TF_ROOT"
-  - ls -R terraform/envs/dev
+  - cd $CI_PROJECT_DIR/$TF_ROOT
+  - pwd
+  - ls -R
   
   - cd $TF_ROOT
   - chmod +x create_backend_bucket.sh
