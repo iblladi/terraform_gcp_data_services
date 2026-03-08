@@ -1,7 +1,7 @@
 resource "google_bigquery_dataset" "dataset" {
   dataset_id                  = var.dataset_id
-  friendly_name               = concat(var.dataset_id, " dataset")
-  description                 = concat("Dataset for ", var.dataset_id)
+  friendly_name               = "${var.dataset_id} dataset"
+  description                 = "Dataset for ${var.dataset_id}"
   location                    = var.region
   default_table_expiration_ms = 3600000
 
