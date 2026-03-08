@@ -38,7 +38,7 @@ before_script:
   - chmod +x create_backend_bucket.sh
 
   # Create backend bucket if not exists
-  - ./create_backend_bucket.sh
+  - ./scripts/backend_bucket/create_backend_bucket.sh
 
   # Initialize Terraform
   - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
