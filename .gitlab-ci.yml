@@ -53,6 +53,7 @@ bucket_creation:
         --output-file=.gcp_temp_cred.json
         --credential-source-file=.ci_job_jwt_file
     - gcloud auth login --cred-file=`pwd`/.gcp_temp_cred.json
+    - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
     - gcloud auth list
 
   # -----------------------------
