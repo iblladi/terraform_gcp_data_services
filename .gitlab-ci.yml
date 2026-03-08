@@ -47,25 +47,25 @@ bucket_creation:
   # Authenticate to GCP via Workload Identity Federation
   # -----------------------------
   script:
-    - echo ${GITLAB_OIDC_TOKEN} > .ci_job_jwt_file
-    - gcloud iam workload-identity-pools create-cred-config ${WORKLOAD_IDENTITY_PROVIDER}
-      --service-account="${GOOGLE_SERVICE_ACCOUNT}"
-      --output-file=.gcp_temp_cred.json
-      --credential-source-file=.ci_job_jwt_file
+    - echo "${GITLAB_OIDC_TOKEN}" > .ci_job_jwt_file
+    - gcloud iam workload-identity-pools create-cred-config "${WORKLOAD_IDENTITY_PROVIDER}" \
+        --service-account="${GOOGLE_SERVICE_ACCOUNT}" \
+        --output-file=".gcp_temp_cred.json" \
+        --credential-source-file=".ci_job_jwt_file"
+    - gcloud auth activate-service-account --cred-file=.gcp_temp_cred.json
     - export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/.gcp_temp_cred.json
-    - gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
     - gcloud auth list
 
   # -----------------------------
   # Create backend bucket if not exists
   # -----------------------------
-    - chmod +x $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh
-    - $CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh $TF_STATE_BUCKET
+    - chmod +x "$CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh"
+    - "$CI_PROJECT_DIR/terraform_project/scripts/backend_bucket/create_backend_bucket.sh" "$TF_STATE_BUCKET"
 
   # -----------------------------
   # Terraform init
   # -----------------------------
-    - cd $CI_PROJECT_DIR/$TF_ROOT
+    - cd "$CI_PROJECT_DIR/$TF_ROOT"
     - terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
 # -----------------------------
