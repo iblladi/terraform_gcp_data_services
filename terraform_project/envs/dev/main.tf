@@ -7,10 +7,10 @@ module "artifact_registry" {
 }
 
 module "storage" {
-  source = "../../modules/storage"
+  source = "../../modules/gcs"
 
   bucket_name = "masterclass-bucket"
-  location    = var.region
+  region = var.region
 }
 
 module "bigquery" {
