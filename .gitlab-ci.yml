@@ -17,9 +17,16 @@ variables:
   WORKLOAD_IDENTITY_PROVIDER: projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab-provider
 
 before_script:
-  - apk add --no-cache bash curl unzip python3 py3-pip
-  - pip3 install --upgrade pip
-  - pip3 install google-cloud-storage
+  # Install dependencies via apk
+  - apk add --no-cache bash curl unzip python3 py3-pip python3-venv
+
+  # Create and activate a virtual environment
+  - python3 -m venv venv
+  - source venv/bin/activate
+
+  # Install Python packages inside the virtual environment
+  - pip install --upgrade pip
+  - pip install google-cloud-storage
 
   # Install Terraform
   - curl -LO https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
