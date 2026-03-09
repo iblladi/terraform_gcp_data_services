@@ -7,7 +7,7 @@ module "artifact_registry" {
 }
 
 module "storage" {
-  source = "../../modules/gcs"
+  source = "../../modules/storage"
 
   bucket_name = "masterclass-bucket"
   region = var.region
