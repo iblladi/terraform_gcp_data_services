@@ -74,3 +74,11 @@ module "eventarc" {
   workflow_id       = module.workflow.workflow_id
   workflow_sa_email = module.iam.service_account_email
 }
+
+resource "google_cloud_run_v2_job_iam_member" "workflow_invoker" {
+  project  = var.project_id
+  location = var.region
+  name     = "dbt-job-masterclass"
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${module.iam.service_account_email}"
+}
