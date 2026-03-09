@@ -50,3 +50,24 @@ module "iam" {
   ]
 
 }
+
+module "workflow" {
+  source = "../../modules/workflow"
+
+  project_id         = var.project_id
+  region             = var.region
+  workflow_sa_email  = "masterclass-sa@${var.project_id}.iam.gserviceaccount.com"
+  bq_dataset         = module.bigquery.dataset_id
+  bq_table           = "ecommerce_data"
+  cloud_run_job_name = "dbt-job-masterclass"
+}
+
+module "eventarc" {
+  source = "../../modules/eventarc"
+
+  project_id        = var.project_id
+  region            = var.region
+  bucket_name       = module.storage.bucket_name
+  workflow_id       = module.workflow.workflow_id
+  workflow_sa_email = "masterclass-sa@${var.project_id}.iam.gserviceaccount.com"
+}
