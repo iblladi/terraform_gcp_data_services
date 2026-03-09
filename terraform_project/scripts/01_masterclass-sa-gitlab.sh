@@ -23,15 +23,12 @@ echo "-------------------------------------"
 echo "Assigning PROJECT roles"
 
 PROJECT_ROLES=(
-"roles/run.admin"
-"roles/artifactregistry.admin"
-"roles/storage.admin"
-"roles/pubsub.admin"
-"roles/bigquery.admin"
-"roles/workflows.admin"
-"roles/iam.workloadIdentityPoolAdmin"
-"roles/iam.serviceAccountAdmin"
-"roles/resourcemanager.projectIamAdmin"
+  "roles/artifactregistry.admin"
+  "roles/storage.admin"
+  "roles/bigquery.admin"
+  "roles/pubsub.admin"
+  "roles/iam.serviceAccountAdmin"
+  "roles/resourcemanager.projectIamAdmin"
 )
 
 for ROLE in "${PROJECT_ROLES[@]}"; do
