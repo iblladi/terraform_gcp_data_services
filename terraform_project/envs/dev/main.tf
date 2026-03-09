@@ -31,6 +31,8 @@ module "iam" {
 
   project_id           = var.project_id
   service_account_name = "masterclass-sa"
+
+  
   roles = [
     "roles/run.invoker",
     "roles/artifactregistry.reader",
@@ -41,4 +43,9 @@ module "iam" {
     "roles/workflows.invoker",
     "roles/bigquery.readSessionUser"
   ]
+
+  impersonating_sas = [
+    "masterclass-sa-gitlab@${var.project_id}.iam.gserviceaccount.com"
+  ]
+  
 }
