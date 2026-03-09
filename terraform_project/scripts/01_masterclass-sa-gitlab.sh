@@ -30,6 +30,7 @@ PROJECT_ROLES=(
 "roles/bigquery.admin"
 "roles/workflows.admin"
 "roles/iam.workloadIdentityPoolAdmin"
+"roles/iam.serviceAccountAdmin"
 )
 
 for ROLE in "${PROJECT_ROLES[@]}"; do
