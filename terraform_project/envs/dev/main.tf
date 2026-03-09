@@ -69,6 +69,7 @@ module "iam_gitlab" {
     "roles/pubsub.admin",
     "roles/bigquery.admin",
     "roles/workflows.admin",
+    "roles/iam.workloadIdentityPoolAdmin",
   ]
 
   # Le pool WIF peut impersonater ce SA (remplace la boucle SA_ROLES)
