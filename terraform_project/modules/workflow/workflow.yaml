@@ -35,6 +35,8 @@ main:
         args:
           projectId: $${project_id}
           jobId: $${bq_job.jobReference.jobId}
+          location: $${location}
+        
         result: bq_status
 
     - check_bq:
