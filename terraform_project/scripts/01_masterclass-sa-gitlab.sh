@@ -29,6 +29,7 @@ PROJECT_ROLES=(
   "roles/pubsub.admin"
   "roles/iam.serviceAccountAdmin"
   "roles/resourcemanager.projectIamAdmin"
+  "roles/run.developer"
 )
 
 for ROLE in "${PROJECT_ROLES[@]}"; do
