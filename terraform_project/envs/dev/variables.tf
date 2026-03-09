@@ -15,3 +15,8 @@ variable "project_number" {
   description = "GCP Project Number (distinct from Project ID)"
   type        = string
 }
+
+variable "gitlab_group" {
+  description = "GitLab group path, e.g. ibeytraininggcp-group"
+  type        = string
+}
