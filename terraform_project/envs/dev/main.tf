@@ -42,7 +42,8 @@ module "iam" {
     "roles/bigquery.jobUser",
     "roles/workflows.invoker",
     "roles/bigquery.readSessionUser",
-    "roles/storage.objectCreator"
+    "roles/storage.objectCreator",
+    "roles/eventarc.eventReceiver",
   ]
 
   impersonating_sas = [
