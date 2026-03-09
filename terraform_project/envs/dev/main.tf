@@ -57,10 +57,12 @@ module "workflow" {
 
   project_id         = var.project_id
   region             = var.region
-  workflow_sa_email  = "masterclass-sa@${var.project_id}.iam.gserviceaccount.com"
+  workflow_sa_email  = module.iam.service_account_email
   bq_dataset         = module.bigquery.dataset_id
   bq_table           = "ecommerce_data"
   cloud_run_job_name = "dbt-job-masterclass"
+
+  depends_on = [module.iam]
 }
 
 module "eventarc" {
@@ -70,5 +72,5 @@ module "eventarc" {
   region            = var.region
   bucket_name       = module.storage.bucket_name
   workflow_id       = module.workflow.workflow_id
-  workflow_sa_email = "masterclass-sa@${var.project_id}.iam.gserviceaccount.com"
+  workflow_sa_email = module.iam.service_account_email
 }
