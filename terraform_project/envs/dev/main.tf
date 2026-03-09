@@ -50,12 +50,6 @@ module "iam" {
 
 }
 
-
-# Résout automatiquement le project_number depuis le project_id
-data "google_project" "current" {
-  project_id = var.project_id
-}
-
 module "iam_gitlab" {
   source = "../../modules/iam"
 
@@ -81,13 +75,13 @@ module "iam_gitlab" {
 resource "google_service_account_iam_member" "gitlab_wif_identity_user" {
   service_account_id = module.iam_gitlab.service_account_name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.current.number}/locations/global/workloadIdentityPools/gitlab-pool/*"
+  member             = "principalSet://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/gitlab-pool/*"
 }
 
 resource "google_service_account_iam_member" "gitlab_wif_token_creator" {
   service_account_id = module.iam_gitlab.service_account_name
   role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "principalSet://iam.googleapis.com/projects/${data.google_project.current.number}/locations/global/workloadIdentityPools/gitlab-pool/*"
+  member             = "principalSet://iam.googleapis.com/projects/${var.project_number}/locations/global/workloadIdentityPools/gitlab-pool/*"
 }
 
 
