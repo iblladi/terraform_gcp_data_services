@@ -1,7 +1,6 @@
 #!/bin/bash
-
-PROJECT_ID=$PROJECT_ID
-PROJECT_NUMBER=$PROJECT_NUMBER
+PROJECT_ID="masterclassparis"
+PROJECT_NUMBER="815606759091"
 
 SA_NAME="masterclass-sa-gitlab"
 SA_EMAIL="$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
@@ -9,6 +8,16 @@ SA_EMAIL="$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 POOL_ID="gitlab-pool"
 
 echo "Creating service account..."
+
+# Only create if it doesn't already exist
+if ! gcloud iam service-accounts describe $SA_EMAIL --project=$PROJECT_ID &>/dev/null; then
+  gcloud iam service-accounts create $SA_NAME \
+    --project=$PROJECT_ID \
+    --display-name="GitLab Terraform Service Account"
+  echo "Service account created."
+else
+  echo "Service account already exists, skipping creation."
+fi
 
 gcloud iam service-accounts create $SA_NAME \
   --project=$PROJECT_ID \
@@ -30,7 +39,8 @@ for ROLE in "${PROJECT_ROLES[@]}"; do
   echo "Assigning $ROLE"
   gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$SA_EMAIL" \
-    --role="$ROLE"
+    --role="$ROLE" \
+    --condition=None
 done
 
 
