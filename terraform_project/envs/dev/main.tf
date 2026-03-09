@@ -35,6 +35,7 @@ module "iam" {
   
   roles = [
     "roles/run.invoker",
+    "roles/run.viewer",
     "roles/artifactregistry.reader",
     "roles/storage.objectViewer",
     "roles/pubsub.publisher",

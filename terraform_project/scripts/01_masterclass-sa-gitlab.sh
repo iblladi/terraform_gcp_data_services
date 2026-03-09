@@ -32,6 +32,7 @@ PROJECT_ROLES=(
   "roles/run.developer"
   "roles/workflows.admin"
   "roles/eventarc.admin"
+  "roles/run.admin"
 )
 
 for ROLE in "${PROJECT_ROLES[@]}"; do
