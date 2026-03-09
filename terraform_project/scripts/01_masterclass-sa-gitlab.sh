@@ -19,10 +19,6 @@ else
   echo "Service account already exists, skipping creation."
 fi
 
-gcloud iam service-accounts create $SA_NAME \
-  --project=$PROJECT_ID \
-  --display-name="GitLab Terraform Service Account"
-
 echo "-------------------------------------"
 echo "Assigning PROJECT roles"
 
@@ -33,6 +29,7 @@ PROJECT_ROLES=(
 "roles/pubsub.admin"
 "roles/bigquery.admin"
 "roles/workflows.admin"
+"roles/iam.workloadIdentityPoolAdmin"
 )
 
 for ROLE in "${PROJECT_ROLES[@]}"; do

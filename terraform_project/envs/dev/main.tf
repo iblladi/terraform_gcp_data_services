@@ -49,35 +49,3 @@ module "iam" {
   ]
 
 }
-
-module "iam_gitlab" {
-  source = "../../modules/iam"
-
-  project_id           = var.project_id
-  service_account_name = "masterclass-sa-gitlab"
-
-  roles = [
-    "roles/run.admin",
-    "roles/artifactregistry.admin",
-    "roles/storage.admin",
-    "roles/pubsub.admin",
-    "roles/bigquery.admin",
-    "roles/workflows.admin",
-    "roles/iam.workloadIdentityPoolAdmin",
-  ]
-
-  # Le pool WIF peut impersonater ce SA (remplace la boucle SA_ROLES)
-  impersonating_sas = []  # géré via wif_bindings ci-dessous
-}
-
-# Add this module call (was missing entirely!)
-module "wif" {
-  source = "../../modules/wif"
-
-  project_id            = var.project_id
-  pool_name             = "gitlab-pool"
-  provider_name         = "gitlab"
-  display_name          = "GitLab"
-  gitlab_group          = var.gitlab_group   # add to variables.tf
-  service_account_email = module.iam_gitlab.service_account_email
-}
