@@ -37,7 +37,7 @@ module "iam" {
     "roles/run.invoker",
     "roles/run.viewer",
     "roles/artifactregistry.reader",
-    "roles/storage.objectViewer",
+    "roles/storage.objectAdmin",
     "roles/pubsub.publisher",
     "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",
